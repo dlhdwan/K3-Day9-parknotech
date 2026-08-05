@@ -1,8 +1,8 @@
 {
   "model": "gemma2:9b",
   "parameter_size": "9B",
-  "framework": "Concurrent Multi-Agent Architecture (Parallel Execution Protocol)",
-  "runtime": "Local Ollama (D:\\OllamaModels) / Python 3.12",
+  "framework": "Custom Multi-Agent Framework (Hierarchical Deliberation & Verification Topology)",
+  "runtime": "Ollama Local (http://localhost:11434)",
   "dataset": "Olist Brazilian E-Commerce Dataset",
   "agents": [
     "CoordinatorAgent",
@@ -13,5 +13,5 @@
     "PolicyAdjudicator",
     "ComplianceGuard"
   ],
-  "created_at": "2026-08-05T05:42:20Z"
+  "created_at": "2026-08-05T05:14:45Z"
 }
