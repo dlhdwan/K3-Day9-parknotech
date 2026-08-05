@@ -1,0 +1,76 @@
+from typing import Dict, Any, List
+from src.agents.base_agent import BaseAgent
+from src.context import DisputeContext
+from src.data_loader import OlistDataLoader
+
+class OrderAgent(BaseAgent):
+    name = "OrderAgent"
+    version = "1.0.0"
+    description = "Handles order status, items, seller information and shipping deadlines."
+    owner = "Data Engineering"
+
+    def run(self, context: DisputeContext) -> DisputeContext:
+        data_loader = OlistDataLoader.get_instance()
+        oid = context.claimed_order_id
+        
+        order_row = data_loader.get_order(oid)
+        if not order_row:
+            context.errors.append(f"DATA_MISSING: Order ID {oid} not found in dataset.")
+            return context
+
+        context.order.order_id = oid
+        context.order.order_status = order_row.get("order_status")
+        context.order.order_delivered_carrier_date = order_row.get("order_delivered_carrier_date")
+        context.order.order_delivered_customer_date = order_row.get("order_delivered_customer_date")
+        context.order.order_estimated_delivery_date = order_row.get("order_estimated_delivery_date")
+        
+        context.candidate_evidences.append(f"order:{oid}")
+
+        items = data_loader.get_order_items(oid)
+        context.order.items = items
+        
+        item_total = 0.0
+        freight_total = 0.0
+        sellers_map = {}
+
+        for item in items:
+            item_id = str(item.get("order_item_id", ""))
+            seller_id = str(item.get("seller_id", ""))
+            limit_date = str(item.get("shipping_limit_date", ""))
+
+            price = float(item.get("price", 0.0))
+            freight = float(item.get("freight_value", 0.0))
+
+            item_total += price
+            freight_total += freight
+
+            if item_id:
+                context.order.shipping_limit_dates[item_id] = limit_date
+                context.candidate_evidences.append(f"item:{oid}:{item_id}")
+            
+            if seller_id and seller_id not in sellers_map:
+                seller_info = data_loader.get_seller(seller_id) or {"seller_id": seller_id}
+                sellers_map[seller_id] = seller_info
+                context.candidate_evidences.append(f"seller:{seller_id}")
+
+        context.order.sellers = list(sellers_map.values())
+        context.order.item_total_brl = round(item_total, 2)
+        context.order.freight_total_brl = round(freight_total, 2)
+        
+        return context
+
+    def get_trace_payload(self, context: DisputeContext) -> Dict[str, Any]:
+        return {
+            "order_id": context.order.order_id,
+            "status": context.order.order_status,
+            "item_count": len(context.order.items),
+            "item_total_brl": context.order.item_total_brl,
+            "freight_total_brl": context.order.freight_total_brl
+        }
+
+    def get_agent_context(self, context: DisputeContext) -> Dict[str, Any]:
+        return {
+            "agent_thought": f"Analyzed order {context.order.order_id}. Found status='{context.order.order_status}', {len(context.order.items)} items, and {len(context.order.sellers)} sellers.",
+            "llm_customer_intent": context.llm_intent,
+            "shipping_limits_identified": list(context.order.shipping_limit_dates.values())
+        }

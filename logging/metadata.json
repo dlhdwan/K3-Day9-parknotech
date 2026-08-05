@@ -1,0 +1,7 @@
+{
+  "model": "Qwen/Qwen2.5-7B-Instruct",
+  "parameters": "7.6B",
+  "framework": "Custom Python Multi-Agent Workflow Engine",
+  "runtime": "Python 3 Standard Library / In-Memory State Graph",
+  "architecture_style": "LangGraph/AutoGen inspired deterministic multi-agent state graph with Handoff Contract and Evidence Builder"
+}
