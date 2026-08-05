@@ -3,5 +3,5 @@
   "parameters": "8.0B",
   "framework": "Custom Python Multi-Agent Workflow Engine",
   "runtime": "Python 3 Standard Library / In-Memory State Graph",
-  "architecture_style": "LangGraph/AutoGen inspired deterministic multi-agent state graph with Handoff Contract and Evidence Builder"
+  "architecture_style": "Tool-using deterministic multi-agent state graph with typed handoff context, independent source audit, and evidence validation"
 }

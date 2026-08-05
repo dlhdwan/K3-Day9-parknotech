@@ -1,7 +1,7 @@
 from typing import Dict, Any, List
 from src.agents.base_agent import BaseAgent
 from src.context import DisputeContext, round_currency
-from src.data_loader import OlistDataLoader
+from src.tools import OrderLookupTool
 
 class OrderAgent(BaseAgent):
     name = "OrderAgent"
@@ -10,12 +10,14 @@ class OrderAgent(BaseAgent):
     owner = "Data Engineering"
     system_prompt = "You are an E-commerce Order Data Investigator. Your mandate is to accurately extract order states, seller identities, and shipping deadlines without hallucination."
 
+    def __init__(self) -> None:
+        self.order_tool = OrderLookupTool()
+
 
     def run(self, context: DisputeContext) -> DisputeContext:
-        data_loader = OlistDataLoader.get_instance()
         oid = context.claimed_order_id
-        
-        order_row = data_loader.get_order(oid)
+        bundle = self.order_tool.run(context, oid)
+        order_row = bundle["order"]
         if not order_row:
             context.errors.append(f"DATA_MISSING: Order ID {oid} not found in dataset.")
             return context
@@ -28,7 +30,7 @@ class OrderAgent(BaseAgent):
         
         context.candidate_evidences.append(f"order:{oid}")
 
-        items = data_loader.get_order_items(oid)
+        items = bundle["items"]
         context.order.items = items
         
         item_total = 0.0
@@ -51,7 +53,7 @@ class OrderAgent(BaseAgent):
                 context.candidate_evidences.append(f"item:{oid}:{item_id}")
             
             if seller_id and seller_id not in sellers_map:
-                seller_info = data_loader.get_seller(seller_id) or {"seller_id": seller_id}
+                seller_info = next((seller for seller in bundle["sellers"] if seller.get("seller_id") == seller_id), {"seller_id": seller_id})
                 sellers_map[seller_id] = seller_info
                 context.candidate_evidences.append(f"seller:{seller_id}")
 

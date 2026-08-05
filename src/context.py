@@ -81,13 +81,16 @@ class DisputeContext:
     
     # Event Traces and Error logging
     trace_events: List[Dict[str, Any]] = field(default_factory=list)
+    tool_calls: List[Dict[str, Any]] = field(default_factory=list)
     errors: List[str] = field(default_factory=list)
 
-    # Actor-Critic Self-Correction Loop flags
-    verification_failed: bool = False
-    verification_feedback: str = ""
-    retry_count: int = 0
-
+    def record_tool_call(self, agent: str, tool: str, arguments: Dict[str, Any], result: Dict[str, Any]) -> None:
+        self.tool_calls.append({
+            "agent": agent,
+            "tool": tool,
+            "arguments": arguments,
+            "result": result,
+        })
 
     def add_trace_event(self, step: int, from_agent: str, to_agent: str, action: str, payload: Dict[str, Any], agent_context: Optional[Dict[str, Any]] = None, duration_ms: float = 0.0):
         event = {

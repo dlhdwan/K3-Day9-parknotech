@@ -11,7 +11,7 @@ class OllamaClient:
     """
     _instance = None
 
-    def __init__(self, host: str = "http://localhost:11434", default_model: str = "qwen3:8b", timeout_sec: float = 3.0):
+    def __init__(self, host: str = "http://localhost:11434", default_model: str = "qwen3:8b", timeout_sec: float = 5.0):
         self.host = host.rstrip("/")
         self.default_model = default_model
         self.timeout = timeout_sec
@@ -73,6 +73,6 @@ class OllamaClient:
             f"English Summary:"
         )
         result = self.generate(prompt)
-        if result.startswith("[") and "Fallback" in result or result.startswith("[Ollama"):
+        if (result.startswith("[") and "Fallback" in result) or result.startswith("[Ollama"):
             return f"Customer requests delay investigation and rights check for order {claimed_order_id}."
         return result

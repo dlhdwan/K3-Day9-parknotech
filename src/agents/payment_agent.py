@@ -1,7 +1,7 @@
 from typing import Dict, Any
 from src.agents.base_agent import BaseAgent
 from src.context import DisputeContext, round_currency
-from src.data_loader import OlistDataLoader
+from src.tools import PaymentLookupTool
 
 class PaymentAgent(BaseAgent):
     name = "PaymentAgent"
@@ -10,12 +10,13 @@ class PaymentAgent(BaseAgent):
     owner = "Financial & Policy Engine"
     system_prompt = "You are a Financial Reconciliation Specialist. You compare payment receipt totals against itemized invoices within an allowable tolerance of 0.10 BRL."
 
+    def __init__(self) -> None:
+        self.payment_tool = PaymentLookupTool()
+
 
     def run(self, context: DisputeContext) -> DisputeContext:
-        data_loader = OlistDataLoader.get_instance()
         oid = context.claimed_order_id
-        
-        payment_rows = data_loader.get_order_payments(oid)
+        payment_rows = self.payment_tool.run(context, oid)
         context.payment.payment_rows = payment_rows
         
         total_payment = 0.0

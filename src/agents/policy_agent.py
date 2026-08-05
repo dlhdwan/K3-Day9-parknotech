@@ -33,15 +33,11 @@ class PolicyAgent(BaseAgent):
             evidence_used=["delivery completed within estimated timeframe or no actionable delay found"]
         )
 
-        # Handle Actor-Critic Self-Correction retry if triggered by VerifierAgent
-        if context.verification_failed and context.verification_feedback:
-            context.errors.append(f"[Self-Correction] PolicyAgent adjusting rules based on feedback: {context.verification_feedback}")
-
         if status == "canceled" and payment_val > 0:
             decision.primary_issue = "canceled_order_paid"
             decision.cause_code = "ORDER_CANCELED_AFTER_PAYMENT"
             decision.responsible_party_type = "platform"
-            decision.responsible_party_id = None  # Expected null in ground truth JSON for platform
+            decision.responsible_party_id = "OLIST_PLATFORM"
             decision.recommended_refund_brl = payment_val
             decision.actions = ["issue_full_refund"]
             decision.matched_rule = "canceled_order_paid"
@@ -52,7 +48,7 @@ class PolicyAgent(BaseAgent):
             decision.primary_issue = "unavailable_order_paid"
             decision.cause_code = "ORDER_UNAVAILABLE_AFTER_PAYMENT"
             decision.responsible_party_type = "platform"
-            decision.responsible_party_id = None  # Expected null in ground truth JSON for platform
+            decision.responsible_party_id = "OLIST_PLATFORM"
             decision.recommended_refund_brl = payment_val
             decision.actions = ["issue_full_refund"]
             decision.matched_rule = "unavailable_order_paid"
@@ -75,7 +71,7 @@ class PolicyAgent(BaseAgent):
             decision.primary_issue = "late_delivery_logistics"
             decision.cause_code = "CARRIER_DELIVERED_AFTER_ESTIMATE"
             decision.responsible_party_type = "logistics_provider"
-            decision.responsible_party_id = None  # Expected null in ground truth JSON for third-party logistics
+            decision.responsible_party_id = "LOGISTICS_PROVIDER"
             decision.recommended_refund_brl = freight_val
             decision.actions = ["refund_freight"]
             decision.matched_rule = "late_delivery_logistics"
@@ -101,21 +97,32 @@ class PolicyAgent(BaseAgent):
             decision.recommended_refund_brl = 0.0
             decision.actions = ["reject_late_refund"]
             decision.matched_rule = "unsupported_late_claim"
-            if not payment.is_reconciled:
-                decision.confidence = 0.85
-            else:
-                decision.confidence = 0.95
+            decision.confidence = 0.95
             decision.evidence_used = ["order delivery completed on or before estimated date and payments reconciled"]
 
         if not order.order_id:
             decision.confidence = 0.5
 
-        # Clear retry flag upon successful rule re-eval
-        if context.verification_failed:
-            context.verification_failed = False
-
-        context.candidate_evidences.extend(["policy:EC_POLICY_V1", f"policy:{decision.cause_code}"])
+        # Strictly follow Section 5 of README: policy:<root_cause_code>
+        context.candidate_evidences.append(f"policy:{decision.cause_code}")
         context.decision = decision
+        context.record_tool_call(
+            self.name,
+            "ec_policy.evaluate_v1",
+            {
+                "order_status": status,
+                "delivered_after_estimate": is_late,
+                "carrier_received_after_limit": carrier_late,
+                "payment_total_brl": payment_val,
+                "multiple_payments": payment.is_multiple_payments,
+                "payment_reconciled": payment.is_reconciled,
+            },
+            {
+                "primary_issue": decision.primary_issue,
+                "cause_code": decision.cause_code,
+                "recommended_refund_brl": decision.recommended_refund_brl,
+            },
+        )
         return context
 
 

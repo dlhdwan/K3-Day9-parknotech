@@ -25,6 +25,7 @@ class BaseAgent(ABC):
         """
         Wrapper to execute run() and record precise duration and rich trace events in context.
         """
+        tool_call_start = len(context.tool_calls)
         start_time = time.perf_counter()
         context = self.run(context)
         end_time = time.perf_counter()
@@ -36,6 +37,7 @@ class BaseAgent(ABC):
         # Automatically inject persona / system prompt context into trace logs
         if "system_prompt" not in agent_ctx and self.system_prompt:
             agent_ctx["system_prompt"] = self.system_prompt
+        agent_ctx["tool_calls"] = context.tool_calls[tool_call_start:]
 
         context.add_trace_event(
             step=step,

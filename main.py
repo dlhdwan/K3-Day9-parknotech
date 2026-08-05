@@ -25,9 +25,10 @@ def main():
     coordinator = CoordinatorAgent(output_dir="output")
 
     input_files = sorted(glob.glob(os.path.join("input", "EC_*.json")))
-    if not input_files:
-        print("WARNING: No EC_*.json input files found in input/ directory.")
-        return
+    expected_names = [f"EC_{index:03d}.json" for index in range(1, 51)]
+    actual_names = [os.path.basename(path) for path in input_files]
+    if actual_names != expected_names:
+        raise RuntimeError("input/ must contain exactly EC_001.json through EC_050.json")
 
     print(f"3. Processing {len(input_files)} customer dispute cases...")
     os.makedirs("logging", exist_ok=True)
@@ -56,12 +57,24 @@ def main():
         "parameters": MODEL_PARAMS,
         "framework": FRAMEWORK,
         "runtime": RUNTIME,
-        "architecture_style": "LangGraph/AutoGen inspired deterministic multi-agent state graph with Handoff Contract and Evidence Builder"
+        "architecture_style": "Tool-using deterministic multi-agent state graph with typed handoff context, independent source audit, and evidence validation"
     }
     with open(os.path.join("logging", "metadata.json"), mode="w", encoding="utf-8") as mf:
         json.dump(metadata, mf, indent=2, ensure_ascii=False)
     
     print("4. Updated logging/metadata.json successfully.")
+
+    # Packaging output.zip cleanly (Section 8 of README)
+    import zipfile
+    zip_path = "output.zip"
+    out_files = sorted(glob.glob("output/EC_*.json"))
+    if [os.path.basename(path) for path in out_files] != expected_names:
+        raise RuntimeError("output/ must contain exactly EC_001.json through EC_050.json")
+    with zipfile.ZipFile(zip_path, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
+        for fname in out_files:
+            arcname = os.path.join("output", os.path.basename(fname))
+            zf.write(fname, arcname=arcname)
+    print(f"5. Successfully packaged {len(out_files)} output JSONs into root {zip_path}.")
     print("=== Multi-Agent execution finished successfully! ===")
 
 if __name__ == "__main__":

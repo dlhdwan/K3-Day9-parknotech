@@ -1,6 +1,7 @@
 from typing import Dict, Any
 from src.agents.base_agent import BaseAgent
 from src.context import DisputeContext
+from src.tools import DeliveryAuditTool
 
 class DeliveryAgent(BaseAgent):
     name = "DeliveryAgent"
@@ -9,44 +10,32 @@ class DeliveryAgent(BaseAgent):
     owner = "Data Engineering"
     system_prompt = "You are a Logistics & Delivery Auditor. Your mission is to analyze carrier delivery milestones, shipping limit dates, and determine if delays originate from seller handoff or courier transit."
 
+    def __init__(self) -> None:
+        self.delivery_tool = DeliveryAuditTool()
+
 
     def run(self, context: DisputeContext) -> DisputeContext:
         order = context.order
         delivery = context.delivery
-
-        carrier_date = order.order_delivered_carrier_date
-        customer_date = order.order_delivered_customer_date
-        estimate_date = order.order_estimated_delivery_date
+        raw_order = {
+            "order_status": order.order_status,
+            "order_delivered_carrier_date": order.order_delivered_carrier_date,
+            "order_delivered_customer_date": order.order_delivered_customer_date,
+            "order_estimated_delivery_date": order.order_estimated_delivery_date,
+        }
+        audit = self.delivery_tool.run(context, raw_order, order.items, context.opened_at)
+        carrier_date = audit["carrier_date"]
+        customer_date = audit["customer_date"]
+        estimate_date = audit["estimate_date"]
 
         delivery.carrier_delivered_date = carrier_date
         delivery.customer_delivered_date = customer_date
         delivery.estimated_delivery_date = estimate_date
 
-        is_late = False
-        if customer_date and estimate_date:
-            is_late = str(customer_date) > str(estimate_date)
-        elif not customer_date and estimate_date:
-            is_late = str(context.opened_at) > str(estimate_date)
-        
+        is_late = audit["delivered_after_estimate"]
         delivery.delivered_after_estimate = is_late
-
-        carrier_late = False
-        violating_seller = None
-
-        for item in order.items:
-            limit_date = str(item.get("shipping_limit_date", ""))
-            seller_id = str(item.get("seller_id", ""))
-
-            if limit_date and carrier_date:
-                if str(carrier_date) > str(limit_date):
-                    carrier_late = True
-                    violating_seller = seller_id
-                    break
-            elif limit_date and not carrier_date and order.order_status not in ("canceled", "unavailable"):
-                if str(context.opened_at) > str(limit_date):
-                    carrier_late = True
-                    violating_seller = seller_id
-                    break
+        carrier_late = audit["carrier_received_after_limit"]
+        violating_seller = audit["violating_seller_id"]
         
         delivery.carrier_received_after_limit = carrier_late
         if violating_seller:

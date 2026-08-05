@@ -38,7 +38,6 @@
     "item:1f7565efbb90c33b80f467d6a75332c5:1",
     "payment:1f7565efbb90c33b80f467d6a75332c5:1",
     "seller:02d35243ea2e497335cd0f076b45675d",
-    "policy:EC_POLICY_V1",
     "policy:SELLER_HANDOFF_AFTER_LIMIT"
   ],
   "financial_resolution": {

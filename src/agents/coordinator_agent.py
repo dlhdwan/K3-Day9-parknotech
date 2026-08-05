@@ -42,28 +42,6 @@ class WorkflowEngine:
             context = self.policy_agent.run_with_trace(context, step=5, from_agent="PaymentAgent")
             context = self.verifier_agent.run_with_trace(context, step=6, from_agent="PolicyAgent")
 
-            # --- ACTOR-CRITIC SELF-CORRECTION HANDOFF LOOP ---
-            step_counter = 7
-            while context.verification_failed and context.retry_count < 2:
-                context.retry_count += 1
-                context.add_trace_event(
-                    step=step_counter,
-                    from_agent="VerifierAgent",
-                    to_agent="PolicyAgent",
-                    action="REJECT_AND_RETRY_POLICY",
-                    payload={"retry_attempt": context.retry_count, "feedback": context.verification_feedback},
-                    agent_context={
-                        "agent_thought": f"[Actor-Critic Loop] Verifier rejected decision due to audit failure. Handoff backwards to PolicyAgent (Attempt {context.retry_count}/2).",
-                        "verification_feedback": context.verification_feedback
-                    },
-                    duration_ms=0.3
-                )
-                step_counter += 1
-                context = self.policy_agent.run_with_trace(context, step=step_counter, from_agent="VerifierAgent")
-                step_counter += 1
-                context = self.verifier_agent.run_with_trace(context, step=step_counter, from_agent="PolicyAgent")
-                step_counter += 1
-
         except Exception as e:
             context.errors.append(f"RUNTIME_ERROR: Workflow exception: {str(e)}")
             if not context.final_output:
@@ -87,7 +65,8 @@ class CoordinatorAgent:
         claimed_order_id = cust_req.get("claimed_order_id", "")
         vi_message = cust_req.get("message", "")
 
-        # Call REAL Ollama Local (qwen2.5:7b) to analyze customer complaint intent
+        # Use the configured <=10B local model for a human-readable intent handoff.
+        # Benchmark decisions remain grounded in CSV facts and EC_POLICY_V1.
         llm_intent = self.llm_client.analyze_case_intent(vi_message, claimed_order_id)
 
         context = DisputeContext(
