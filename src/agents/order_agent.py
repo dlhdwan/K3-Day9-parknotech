@@ -1,6 +1,6 @@
 from typing import Dict, Any, List
 from src.agents.base_agent import BaseAgent
-from src.context import DisputeContext
+from src.context import DisputeContext, round_currency
 from src.data_loader import OlistDataLoader
 
 class OrderAgent(BaseAgent):
@@ -8,6 +8,8 @@ class OrderAgent(BaseAgent):
     version = "1.0.0"
     description = "Handles order status, items, seller information and shipping deadlines."
     owner = "Data Engineering"
+    system_prompt = "You are an E-commerce Order Data Investigator. Your mandate is to accurately extract order states, seller identities, and shipping deadlines without hallucination."
+
 
     def run(self, context: DisputeContext) -> DisputeContext:
         data_loader = OlistDataLoader.get_instance()
@@ -54,8 +56,8 @@ class OrderAgent(BaseAgent):
                 context.candidate_evidences.append(f"seller:{seller_id}")
 
         context.order.sellers = list(sellers_map.values())
-        context.order.item_total_brl = round(item_total, 2)
-        context.order.freight_total_brl = round(freight_total, 2)
+        context.order.item_total_brl = round_currency(item_total)
+        context.order.freight_total_brl = round_currency(freight_total)
         
         return context
 

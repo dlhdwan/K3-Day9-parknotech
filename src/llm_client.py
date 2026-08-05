@@ -11,7 +11,7 @@ class OllamaClient:
     """
     _instance = None
 
-    def __init__(self, host: str = "http://localhost:11434", default_model: str = "qwen2.5:7b-instruct", timeout_sec: float = 8.0):
+    def __init__(self, host: str = "http://localhost:11434", default_model: str = "qwen3:8b", timeout_sec: float = 3.0):
         self.host = host.rstrip("/")
         self.default_model = default_model
         self.timeout = timeout_sec
@@ -32,16 +32,7 @@ class OllamaClient:
                     models = [m.get("name") for m in data.get("models", []) if m.get("name")]
                     print(f"[OllamaClient] Connected successfully to local Ollama server at {self.host}")
                     print(f"[OllamaClient] Available local models: {models}")
-                    
-                    # Auto-resolve best matching model tag
-                    if self.default_model not in models and models:
-                        # Find best match for qwen
-                        qwen_models = [m for m in models if "qwen" in m.lower()]
-                        if qwen_models:
-                            self.default_model = qwen_models[0]
-                        else:
-                            self.default_model = models[0]
-                        print(f"[OllamaClient] Resolved model tag to: {self.default_model}")
+                    print(f"[OllamaClient] Active target model configured: {self.default_model}")
                     return True
         except (urllib.error.URLError, TimeoutError, Exception) as e:
             print(f"[OllamaClient] WARNING: Ollama local server at {self.host} not reachable ({e}). Using instantaneous Rule-Based context fallback.")

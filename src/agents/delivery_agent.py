@@ -7,6 +7,8 @@ class DeliveryAgent(BaseAgent):
     version = "1.0.0"
     description = "Analyzes actual vs estimated delivery dates and seller handoff limits."
     owner = "Data Engineering"
+    system_prompt = "You are a Logistics & Delivery Auditor. Your mission is to analyze carrier delivery milestones, shipping limit dates, and determine if delays originate from seller handoff or courier transit."
+
 
     def run(self, context: DisputeContext) -> DisputeContext:
         order = context.order

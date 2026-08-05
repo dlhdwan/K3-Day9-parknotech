@@ -6,8 +6,9 @@ from src.data_loader import OlistDataLoader
 from src.agents.coordinator_agent import CoordinatorAgent
 
 # Khai báo model sử dụng theo yêu cầu đề bài (không để trong .env, đặt trực tiếp trong code để chấm)
-MODEL_NAME = "Qwen/Qwen2.5-7B-Instruct"
-MODEL_PARAMS = "7.6B"
+MODEL_NAME = "qwen3:8b"
+MODEL_PARAMS = "8.0B"
+
 FRAMEWORK = "Custom Python Multi-Agent Workflow Engine"
 RUNTIME = "Python 3 Standard Library / In-Memory State Graph"
 
@@ -32,7 +33,6 @@ def main():
     os.makedirs("logging", exist_ok=True)
     trace_file_path = os.path.join("logging", "trace.jsonl")
 
-    # Overwrite trace file for latest execution only (do not append)
     total_events = 0
     with open(trace_file_path, mode="w", encoding="utf-8") as trace_f:
         for file_path in input_files:

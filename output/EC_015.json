@@ -29,7 +29,7 @@
     "responsible_parties": [
       {
         "party_type": "platform",
-        "party_id": "OLIST_PLATFORM"
+        "party_id": null
       }
     ]
   },
@@ -38,6 +38,7 @@
     "item:c504f1f5fd54cc8398d57dc0da49de01:1",
     "payment:c504f1f5fd54cc8398d57dc0da49de01:1",
     "seller:cfb1a033743668a192316f3c6d1d2671",
+    "policy:EC_POLICY_V1",
     "policy:ORDER_CANCELED_AFTER_PAYMENT"
   ],
   "financial_resolution": {

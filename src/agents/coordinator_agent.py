@@ -29,6 +29,7 @@ class WorkflowEngine:
                 action="INIT_AND_DISPATCH_ORDER",
                 payload={"claimed_order_id": context.claimed_order_id},
                 agent_context={
+                    "system_prompt": "You are the Chief Coordinator Orchestrator. Your objective is to process customer dispute intents via Local LLM and coordinate domain agent handoffs.",
                     "agent_thought": "Received customer dispute case. Dispatched to OrderAgent to fetch order status and item records.",
                     "llm_intent_extracted": context.llm_intent,
                     "raw_customer_message": context.customer_request.get("message", "")
@@ -40,6 +41,28 @@ class WorkflowEngine:
             context = self.payment_agent.run_with_trace(context, step=4, from_agent="DeliveryAgent")
             context = self.policy_agent.run_with_trace(context, step=5, from_agent="PaymentAgent")
             context = self.verifier_agent.run_with_trace(context, step=6, from_agent="PolicyAgent")
+
+            # --- ACTOR-CRITIC SELF-CORRECTION HANDOFF LOOP ---
+            step_counter = 7
+            while context.verification_failed and context.retry_count < 2:
+                context.retry_count += 1
+                context.add_trace_event(
+                    step=step_counter,
+                    from_agent="VerifierAgent",
+                    to_agent="PolicyAgent",
+                    action="REJECT_AND_RETRY_POLICY",
+                    payload={"retry_attempt": context.retry_count, "feedback": context.verification_feedback},
+                    agent_context={
+                        "agent_thought": f"[Actor-Critic Loop] Verifier rejected decision due to audit failure. Handoff backwards to PolicyAgent (Attempt {context.retry_count}/2).",
+                        "verification_feedback": context.verification_feedback
+                    },
+                    duration_ms=0.3
+                )
+                step_counter += 1
+                context = self.policy_agent.run_with_trace(context, step=step_counter, from_agent="VerifierAgent")
+                step_counter += 1
+                context = self.verifier_agent.run_with_trace(context, step=step_counter, from_agent="PolicyAgent")
+                step_counter += 1
 
         except Exception as e:
             context.errors.append(f"RUNTIME_ERROR: Workflow exception: {str(e)}")

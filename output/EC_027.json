@@ -25,13 +25,14 @@
     "responsible_parties": [
       {
         "party_type": "platform",
-        "party_id": "OLIST_PLATFORM"
+        "party_id": null
       }
     ]
   },
   "evidence_ids": [
     "order:2f346d92b11fcc7c342b3392b174cf3b",
     "payment:2f346d92b11fcc7c342b3392b174cf3b:1",
+    "policy:EC_POLICY_V1",
     "policy:ORDER_UNAVAILABLE_AFTER_PAYMENT"
   ],
   "financial_resolution": {

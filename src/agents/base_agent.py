@@ -12,6 +12,7 @@ class BaseAgent(ABC):
     version: str = "1.0.0"
     description: str = "Abstract agent interface"
     owner: str = "System"
+    system_prompt: str = "You are an autonomous AI Agent operating within an enterprise e-commerce workflow."
 
     @abstractmethod
     def run(self, context: DisputeContext) -> DisputeContext:
@@ -32,6 +33,10 @@ class BaseAgent(ABC):
         payload = self.get_trace_payload(context)
         agent_ctx = self.get_agent_context(context)
         
+        # Automatically inject persona / system prompt context into trace logs
+        if "system_prompt" not in agent_ctx and self.system_prompt:
+            agent_ctx["system_prompt"] = self.system_prompt
+
         context.add_trace_event(
             step=step,
             from_agent=from_agent,

@@ -29,7 +29,7 @@
     "responsible_parties": [
       {
         "party_type": "logistics_provider",
-        "party_id": "LOGISTICS_PROVIDER"
+        "party_id": null
       }
     ]
   },
@@ -38,7 +38,8 @@
     "item:3aaee056441dcae251f360b1c71a7279:1",
     "payment:3aaee056441dcae251f360b1c71a7279:1",
     "seller:c826c40d7b19f62a09e2d7c5e7295ee2",
-    "policy:CARRIER_DELIVERED_AFTER_ESTIMATE"
+    "policy:CARRIER_DELIVERED_AFTER_ESTIMATE",
+    "policy:EC_POLICY_V1"
   ],
   "financial_resolution": {
     "currency": "BRL",

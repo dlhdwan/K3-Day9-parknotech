@@ -1,6 +1,6 @@
 from typing import Dict, Any
 from src.agents.base_agent import BaseAgent
-from src.context import DisputeContext
+from src.context import DisputeContext, round_currency
 from src.data_loader import OlistDataLoader
 
 class PaymentAgent(BaseAgent):
@@ -8,6 +8,8 @@ class PaymentAgent(BaseAgent):
     version = "1.0.0"
     description = "Reconciles payment records against item and freight sums."
     owner = "Financial & Policy Engine"
+    system_prompt = "You are a Financial Reconciliation Specialist. You compare payment receipt totals against itemized invoices within an allowable tolerance of 0.10 BRL."
+
 
     def run(self, context: DisputeContext) -> DisputeContext:
         data_loader = OlistDataLoader.get_instance()
@@ -23,11 +25,11 @@ class PaymentAgent(BaseAgent):
             seq = str(row.get("payment_sequential", "1"))
             context.candidate_evidences.append(f"payment:{oid}:{seq}")
 
-        context.payment.payment_total_brl = round(total_payment, 2)
+        context.payment.payment_total_brl = round_currency(total_payment)
         context.payment.is_multiple_payments = len(payment_rows) >= 2
 
-        expected_total = round(context.order.item_total_brl + context.order.freight_total_brl, 2)
-        diff = round(abs(context.payment.payment_total_brl - expected_total), 2)
+        expected_total = round_currency(context.order.item_total_brl + context.order.freight_total_brl)
+        diff = round_currency(abs(context.payment.payment_total_brl - expected_total))
         context.payment.reconciliation_diff_brl = diff
         
         context.payment.is_reconciled = (diff <= 0.10)

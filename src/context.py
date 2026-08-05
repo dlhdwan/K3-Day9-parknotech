@@ -1,6 +1,16 @@
 from dataclasses import dataclass, field
 from typing import List, Optional, Dict, Any
 import datetime
+from decimal import Decimal, ROUND_HALF_UP
+
+def round_currency(val: float) -> float:
+    """Standard financial rounding (ROUND_HALF_UP) to 2 decimal places to avoid Python banking rounding precision drift."""
+    try:
+        dec_val = Decimal(str(val))
+    except (Exception, ValueError, TypeError):
+        dec_val = Decimal(val)
+    return float(dec_val.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP))
+
 
 @dataclass
 class OrderSubContext:
@@ -72,6 +82,12 @@ class DisputeContext:
     # Event Traces and Error logging
     trace_events: List[Dict[str, Any]] = field(default_factory=list)
     errors: List[str] = field(default_factory=list)
+
+    # Actor-Critic Self-Correction Loop flags
+    verification_failed: bool = False
+    verification_feedback: str = ""
+    retry_count: int = 0
+
 
     def add_trace_event(self, step: int, from_agent: str, to_agent: str, action: str, payload: Dict[str, Any], agent_context: Optional[Dict[str, Any]] = None, duration_ms: float = 0.0):
         event = {
